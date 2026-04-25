@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Item {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id         String        @id @default(cuid())
+  createdAt  DateTime      @default(now())
+  characters EveCharacter[]
+}
+
+model EveCharacter {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eveCharacterId Int       @unique
+  name           String
+  ownerHash      String?
+  token          EveToken?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model EveToken {
+  id                   String       @id @default(cuid())
+  characterId          String       @unique
+  character            EveCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  refreshTokenEnc      String
+  accessTokenEnc       String?
+  accessTokenExpiresAt DateTime?
+  scopes               String
+  tokenClaimsJson      Json?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+}
+
+model ZkbEvent {
+  killmailId      Int      @id
+  hash            String?
+  killTime        DateTime
+  victimCorpId    Int?
+  victimAllianceId Int?
+  shipTypeId      Int?
+  systemId        Int?
+  regionId        Int?
+  totalValue      Float?
+  isLoss          Boolean  @default(true)
+  rawJson         Json?
+  killmail        Killmail?
+  campaignMemberships CampaignMembership[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([killTime])
+  @@index([victimAllianceId])
+  @@index([shipTypeId])
+  @@index([regionId])
+  @@index([systemId])
+}
+
+model Killmail {
+  killmailId    Int        @id
+  zkbEvent      ZkbEvent?  @relation(fields: [killmailId], references: [killmailId], onDelete: Cascade)
+  killTime      DateTime
+  solarSystemId Int
+  victimShipTypeId Int?
+  rawJson       Json
+  items         KillmailItem[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([killTime])
+  @@index([solarSystemId])
+  @@index([victimShipTypeId])
+}
+
+model KillmailItem {
+  id            String   @id @default(cuid())
+  killmailId    Int
+  killmail      Killmail @relation(fields: [killmailId], references: [killmailId], onDelete: Cascade)
+  typeId        Int
+  flag          Int?
+  singleton     Int?
+  qtyDropped    Int?
+  qtyDestroyed  Int?
+
+  @@index([killmailId])
+  @@index([typeId])
+}
+
+model EveTypeCache {
+  typeId     Int      @id
+  name       String
+  category   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Campaign {
+  id        String          @id @default(cuid())
+  name      String
+  startAt   DateTime
+  endAt     DateTime
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  scopes    CampaignScope[]
+  members   CampaignMembership[]
+
+  @@index([startAt])
+  @@index([endAt])
+}
+
+model CampaignScope {
+  id         String    @id @default(cuid())
+  campaignId String
+  campaign   Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  allianceId Int?
+  regionId   Int?
+  systemId   Int?
+
+  @@index([campaignId])
+  @@index([allianceId])
+  @@index([regionId])
+  @@index([systemId])
+}
+
+model CampaignMembership {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  killmailId Int
+  zkbEvent   ZkbEvent @relation(fields: [killmailId], references: [killmailId], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([campaignId, killmailId])
+  @@index([killmailId])
+}
+
