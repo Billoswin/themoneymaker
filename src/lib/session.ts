@@ -36,6 +36,18 @@ export function getOrCreateUserId(): string {
   return id;
 }
 
+export function getUserId(): string | undefined {
+  const store = cookies() as unknown as {
+    get: (name: string) => { value: string } | undefined;
+  };
+  return store.get(COOKIE_NAME)?.value;
+}
+
+export function ensureUserId(): string {
+  // Only call this in a Route Handler or Server Action (it sets cookies).
+  return getOrCreateUserId();
+}
+
 export function clearUserId() {
   const store = cookies() as unknown as {
     set: (name: string, value: string, opts: { path: string; maxAge: number }) => void;

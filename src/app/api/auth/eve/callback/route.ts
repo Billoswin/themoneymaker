@@ -7,7 +7,7 @@ import {
   parseCharacterIdFromSub,
   verifyAccessToken,
 } from "@/lib/evesso";
-import { getOrCreateUserId, verifyState } from "@/lib/session";
+import { getUserId, verifyState } from "@/lib/session";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -18,7 +18,10 @@ export async function GET(req: Request) {
   }
 
   const statePayload = verifyState<{ userId: string }>(state);
-  const cookieUserId = getOrCreateUserId();
+  const cookieUserId = getUserId();
+  if (!cookieUserId) {
+    return NextResponse.json({ error: "Missing session cookie" }, { status: 400 });
+  }
   if (statePayload.userId !== cookieUserId) {
     return NextResponse.json({ error: "State mismatch" }, { status: 400 });
   }

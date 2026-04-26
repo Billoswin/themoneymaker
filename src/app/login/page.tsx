@@ -1,14 +1,14 @@
 import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
-import { getOrCreateUserId } from "@/lib/session";
+import { getUserId } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
-  const userId = getOrCreateUserId();
+  const userId = getUserId();
   const characters = await prisma.eveCharacter.findMany({
-    where: { userId },
+    where: userId ? { userId } : { userId: "__none__" },
     orderBy: { updatedAt: "desc" },
     include: { token: true },
   });
@@ -34,7 +34,11 @@ export default async function LoginPage() {
         </a>
       </div>
 
-      {characters.length === 0 ? (
+      {!userId ? (
+        <p className="text-sm text-zinc-500">
+          Click “Connect character” to start. Your session cookie will be created in the auth redirect.
+        </p>
+      ) : characters.length === 0 ? (
         <p className="text-sm text-zinc-500">No characters connected yet.</p>
       ) : (
         <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
