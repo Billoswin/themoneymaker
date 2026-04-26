@@ -70,6 +70,7 @@ export async function GET(req: Request) {
     },
   });
 
-  return NextResponse.redirect(new URL("/login", url));
+  const base = process.env.PUBLIC_BASE_URL ?? url.origin;
+  return NextResponse.redirect(new URL("/login", base));
 }
 
