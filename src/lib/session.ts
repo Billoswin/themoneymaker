@@ -3,6 +3,12 @@ import { cookies } from "next/headers";
 
 const COOKIE_NAME = "tmm_user";
 
+function isCookieSecure(): boolean {
+  // Default false so HTTP on a LAN VM works.
+  // Set COOKIE_SECURE=true when you put the app behind HTTPS/reverse-proxy.
+  return process.env.COOKIE_SECURE === "true";
+}
+
 function getKey(): Buffer {
   const secret = process.env.APP_SECRET;
   if (!secret) throw new Error("APP_SECRET is required");
@@ -29,7 +35,7 @@ export function getOrCreateUserId(): string {
   store.set(COOKIE_NAME, id, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isCookieSecure(),
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
   });
