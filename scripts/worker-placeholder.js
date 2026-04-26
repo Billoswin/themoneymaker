@@ -49,7 +49,8 @@ async function main() {
 
       if (Array.isArray(rows)) {
         for (const row of rows) {
-          const killmailId = row.killmail_id ?? row.killID;
+          const killmailIdRaw = row.killmail_id ?? row.killID;
+          const killmailId = Number(killmailIdRaw);
           if (!Number.isInteger(killmailId)) continue;
 
           const hash = row.zkb?.hash ?? row.hash ?? null;
