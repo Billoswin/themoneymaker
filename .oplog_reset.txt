@@ -1,0 +1,14 @@
+﻿reset 2026-04-25T22:07:26.4572047-04:00
+mm_after=
+.env.example
+.git
+.oplog_reset.txt
+app
+docker-compose.yml
+Dockerfile
+load_sde.py
+load_sde_map.py
+README.md
+requirements.txt
+templates
+done

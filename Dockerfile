@@ -1,43 +1,23 @@
-# syntax=docker/dockerfile:1
+FROM python:3.12-slim
 
-FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat openssl
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-FROM base AS deps
-COPY package.json package-lock.json ./
-# `postinstall` runs `prisma generate`, but schema isn't copied yet in this stage.
-RUN npm ci --ignore-scripts
+# System deps for some uvicorn[standard] extras (eg, httptools/uvloop not used on Windows
+# but can be pulled in by the extra); keep minimal and rely on wheels when available.
+RUN pip install --no-cache-dir --upgrade pip
 
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
-RUN npx prisma generate
-RUN npm run build
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
-FROM base AS runner
-WORKDIR /app
+COPY . /app
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
+EXPOSE 8585
 
-RUN npm install -g prisma@5.22.0
+# Ensure config writes DBs/uploads to /app/data (mounted as a volume in compose)
+ENV VM_HOST=0.0.0.0 \
+    VM_PORT=8585
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/scripts ./scripts
-
-USER nextjs
-
-EXPOSE 3000
-
-CMD ["sh", "-c", "prisma migrate deploy && node server.js"]
-
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8585"]
